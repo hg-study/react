@@ -1,0 +1,25 @@
+/* 09_EX 단계 2 - CSS 파일 import 로 적용되는 스타일 */
+.css-box {
+  width: 120px;
+  height: 120px;
+  background-color: tomato;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 단계 2 응용 - 조건부 className 으로 활성/비활성 표현 */
+.tag {
+  display: inline-block;
+  padding: 4px 10px;
+  margin-right: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: default;
+}
+.tag-active {
+  background-color: #1971c2;
+  color: white;
+  border-color: #1971c2;
+}

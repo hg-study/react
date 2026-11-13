@@ -1,0 +1,18 @@
+/* 09_EX 단계 3 - SCSS (중첩 문법) 로 적용되는 스타일 */
+$main-color: #6f42c1;
+
+.scss-box {
+  width: 120px;
+  height: 120px;
+  background-color: $main-color;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* 중첩(nesting) - .scss-box 안의 span */
+  span {
+    font-weight: bold;
+    text-decoration: underline;
+  }
+}

@@ -1,0 +1,6 @@
+/* 외부 CSS 파일 : import 하면 전체 앱에 적용됨. 이름이 겹치지 않게 부모 클래스(.basic-component)를 앞에 붙여 범위를 좁힘 */
+.basic-component .box-2{
+    width: 200px;
+    height: 200px;
+    background-color: royalblue;
+}

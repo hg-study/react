@@ -1,0 +1,15 @@
+// SCSS : CSS 를 확장한 문법. 선택자를 안에 중첩해서 쓸 수 있어 반복이 줄어듦
+// 설치한 sass 가 .scss 파일을 CSS 로 변환해 줌
+.scss-component{
+    h1{
+        background-color: orange;
+        color: white;
+    }
+    ul{
+        list-style: none;
+        li{
+            min-height: 50px;
+            color:red;
+        }
+    }
+}

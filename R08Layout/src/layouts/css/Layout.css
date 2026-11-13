@@ -1,0 +1,18 @@
+/* 레이아웃 스타일
+   .wrapper>header 처럼 자식 선택자(>)로 영역별 크기와 테두리를 지정함 */
+
+/* 크기 계산에 테두리와 안쪽 여백을 포함 */
+*{box-sizing: border-box;}
+a{text-decoration: none; color: black;}
+ul{list-style: none; padding: 0;}
+body{margin: 0; padding: 0;}
+
+.wrapper{}
+.wrapper>header{min-height: 100px; border: 1px solid;}
+.wrapper>header>.top-header{min-height: 50px; border-bottom: 1px solid;}
+.wrapper>header>nav{}
+
+/* main 을 flex 로 만들어 aside 와 section 을 가로로 나란히 배치 */
+.wrapper>main{display: flex; min-height: 500px;}
+.wrapper>main>aside{min-width: 300px; border-right: 1px solid;}
+.wrapper>footer{min-height: 150px; border: 1px solid;}
