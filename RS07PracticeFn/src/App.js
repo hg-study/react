@@ -1,0 +1,34 @@
+// =======================================
+// 앱
+// 화면 구성과 라우팅
+// =======================================
+
+import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
+
+import User from "./components/User";
+import Join from "./components/Join";
+import Login from "./components/Login";
+import Logout from "./components/Logout";
+import Main from "./components/Main";
+
+// 라우팅: 주소별로 컴포넌트를 연결
+function App() {
+  return (
+    <Router>
+      <Link to="/">MAIN</Link> |
+      <Link to="/user">USER</Link> |
+      <Link to="/join">JOIN</Link> |
+      <Link to="/login">LOGIN</Link> |
+      <Link to="/logout">LOGOUT</Link> |
+      <Routes>
+        <Route path="/" element={<Main />} />
+        <Route path="/user" element={<User />} />
+        <Route path="/join" element={<Join />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/logout" element={<Logout />} />
+      </Routes>
+    </Router>
+  );
+}
+
+export default App;

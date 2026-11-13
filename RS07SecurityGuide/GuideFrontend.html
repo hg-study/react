@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>07 Spring Security · FN 제작 가이드</title>
+<style>
+  :root{
+    --bg:#ffffff; --ink:#1a1a1a; --sub:#666; --line:#e0e0e0; --soft:#fafafa;
+    --fn:#1d4ed8; --bn:#047857; --hl:#fff3bf;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,'Segoe UI','Malgun Gothic',sans-serif;
+       color:var(--ink);background:var(--bg);font-size:14px;line-height:1.65}
+  code{font-family:'Consolas',monospace;font-size:.92em}
+
+  .layout{display:flex;max-width:1200px;margin:0 auto;align-items:flex-start}
+
+  /* left quick menu */
+  .sidebar{width:230px;flex:none;position:sticky;top:0;height:100vh;overflow-y:auto;
+           border-right:1px solid var(--line);padding:24px 0}
+  .sidebar .brand{padding:0 20px 18px;border-bottom:1px solid var(--line);margin-bottom:14px}
+  .sidebar .brand h1{margin:0 0 4px;font-size:15px;font-weight:600;line-height:1.4}
+  .sidebar .brand span{font-size:12px;color:var(--sub)}
+  .sidebar .hint{padding:12px 20px 0;font-size:11.5px;color:var(--sub);line-height:1.7}
+  .sidebar .hint b{color:var(--ink)}
+  .qgroup{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
+          color:var(--sub);padding:14px 20px 6px}
+  .qmenu{list-style:none;margin:0;padding:0}
+  .qmenu a{display:flex;align-items:baseline;gap:8px;padding:8px 20px;text-decoration:none;
+           color:var(--ink);border-left:3px solid transparent;font-size:13px}
+  .qmenu a:hover{background:var(--soft)}
+  .qmenu a.active{border-left-color:var(--fn);background:var(--soft);font-weight:600;color:var(--fn)}
+  .qmenu .qn{font-family:'Consolas',monospace;font-size:11px;color:var(--sub);flex:none;width:16px}
+  .qmenu a.active .qn{color:var(--fn)}
+  .qmenu .qf{font-family:'Consolas',monospace}
+
+  /* right content */
+  .content{flex:1;min-width:0;padding:24px 32px 80px}
+  .intro{border:1px solid var(--line);background:var(--soft);padding:16px 18px;margin-bottom:26px}
+  .intro p{margin:0 0 12px;color:var(--sub);font-size:13.5px}
+  .intro .meta{display:flex;gap:22px;flex-wrap:wrap;font-size:12.5px;color:var(--sub)}
+  .intro .meta b{color:var(--ink);font-weight:600}
+
+  /* step */
+  .step{border:1px solid var(--line);margin:0 0 16px;scroll-margin-top:16px}
+  .step-h{display:flex;align-items:baseline;gap:10px;padding:13px 18px;
+          border-bottom:1px solid var(--line);background:var(--soft)}
+  .num{font-size:13px;font-weight:700;color:var(--fn);font-family:'Consolas',monospace}
+  .step-h h3{margin:0;font-size:15px;font-weight:600}
+  .step-h .file-tag{margin-left:auto;font-family:'Consolas',monospace;font-size:12px;color:var(--sub)}
+
+  .cols{display:grid;grid-template-columns:1fr 1fr}
+  @media(max-width:860px){.cols{grid-template-columns:1fr}}
+  .pane{padding:16px 18px}
+  .pane.fn{border-right:1px solid var(--line)}
+  @media(max-width:860px){.pane.fn{border-right:0;border-bottom:1px solid var(--line)}}
+  .plabel{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px}
+  .plabel.fn{color:var(--fn)}
+  .plabel.bn{color:var(--bn)}
+  .plabel .cnt{color:var(--sub);font-weight:600}
+
+  /* accordion */
+  .acc{border:1px solid var(--line);margin-top:8px}
+  .acc>summary{list-style:none;cursor:pointer;padding:9px 12px 9px 30px;position:relative;
+       font-size:12.5px;background:var(--soft);user-select:none}
+  .acc>summary::-webkit-details-marker{display:none}
+  .acc>summary::before{content:"▶";position:absolute;left:12px;top:10px;font-size:9px;color:var(--sub);
+       transition:transform .12s}
+  .acc[open]>summary::before{transform:rotate(90deg)}
+  .acc>summary:hover{background:#f2f2f2}
+  .acc .bnum,.acc .fnum{display:inline-grid;place-items:center;width:17px;height:17px;
+       font-size:10.5px;font-weight:700;font-family:'Consolas',monospace;margin-right:6px;vertical-align:middle}
+  .acc .bnum{border:1px solid var(--bn);color:var(--bn)}
+  .acc .fnum{border:1px solid var(--fn);color:var(--fn)}
+  .acc .bf{font-family:'Consolas',monospace;font-weight:600;color:var(--ink)}
+  .acc .bf code{color:var(--bn);font-weight:400}
+  .acc.fnacc .bf code{color:var(--fn)}
+  .accbody{padding:12px;border-top:1px solid var(--line)}
+  .accbody .micro{margin:8px 0 0;font-size:12px;color:var(--sub)}
+  .accbody .micro b{color:var(--ink)}
+  .accbody .micro .warn{color:#b45309}
+
+  /* full code block : 툴팁이 잘리지 않도록 overflow visible */
+  pre.code{margin:0;background:#fbfbfb;border:1px solid var(--line);padding:12px 14px;
+       font-family:'Consolas',monospace;font-size:12px;line-height:1.65;color:#333;
+       overflow:visible;white-space:pre-wrap;word-break:break-word}
+  pre.code .c{color:#999}
+  pre.code .s{color:#047857}
+  pre.code .k{color:#7c3aed}
+  /* 주요코드 강조 라인 */
+  .hl{background:var(--hl);display:inline-block;width:100%}
+  /* hover 해석 툴팁 */
+  .tip{position:relative;border-bottom:1px dotted #b0b0b0;cursor:help}
+  .tip:hover{background:#ffe89e}
+  .tip::after{content:attr(data-tip);position:absolute;left:0;top:calc(100% + 7px);
+       background:#161616;color:#fff;padding:7px 10px;border:1px solid #000;
+       font-family:-apple-system,'Malgun Gothic',sans-serif;font-size:11.5px;font-weight:400;line-height:1.55;
+       width:max-content;max-width:290px;white-space:normal;
+       opacity:0;visibility:hidden;transition:opacity .1s;z-index:50;pointer-events:none;
+       box-shadow:0 3px 10px rgba(0,0,0,.25)}
+  .tip:hover::after{opacity:1;visibility:visible}
+
+  .note{padding:12px 18px;border-top:1px solid var(--line);font-size:13px;color:#555}
+  .note b{color:var(--ink)}
+  .note .warn{color:#b45309}
+
+  /* 저작권 — 내용 침범 않도록 아주 작게 */
+  .copyright{position:fixed;right:8px;bottom:6px;font-size:9px;color:#c2c2c2;
+       background:rgba(255,255,255,.75);padding:2px 6px;z-index:60;pointer-events:none;
+       max-width:46vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:-.1px}
+  .copyright b{color:#a8a8a8;font-weight:600}
+  .copyright:hover{opacity:.25}
+
+  @media(max-width:860px){
+    .layout{flex-direction:column}
+    .sidebar{width:100%;height:auto;position:static;border-right:0;border-bottom:1px solid var(--line);padding:16px 0}
+    .qmenu{display:flex;flex-wrap:wrap}
+    .qmenu a{border-left:0;border-bottom:2px solid transparent;padding:8px 12px}
+    .qmenu a.active{border-left:0;border-bottom-color:var(--fn)}
+    .content{padding:20px}
+    .copyright{position:static;margin:20px auto 0;width:max-content}
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <h1>07 Spring Security<br>FN 제작 가이드</h1>
+      <span>FN 작업 단계 → 관련 BN 매핑</span>
+    </div>
+    <div class="qgroup">Phase 1 · 셋업</div>
+    <ul class="qmenu">
+      <li><a href="#s1"><span class="qn">01</span><span class="qf">package.json</span></a></li>
+      <li><a href="#s2"><span class="qn">02</span><span class="qf">App.js</span></a></li>
+    </ul>
+    <div class="qgroup">Phase 2 · 인증 흐름</div>
+    <ul class="qmenu">
+      <li><a href="#s3"><span class="qn">03</span><span class="qf">Main.jsx</span></a></li>
+      <li><a href="#s4"><span class="qn">04</span><span class="qf">Join.jsx</span></a></li>
+      <li><a href="#s5"><span class="qn">05</span><span class="qf">Login.jsx</span></a></li>
+      <li><a href="#s6"><span class="qn">06</span><span class="qf">axiosConfig.js</span></a></li>
+      <li><a href="#s7"><span class="qn">07</span><span class="qf">User.jsx</span></a></li>
+      <li><a href="#s8"><span class="qn">08</span><span class="qf">Logout.jsx</span></a></li>
+    </ul>
+    <div class="hint"><b>사용법</b><br>▶ 항목 클릭 = 전체 코드 펼치기<br>노란 줄 = 주요 코드<br>점선 밑줄 hover = 해석 툴팁</div>
+  </aside>
+
+  <main class="content">
+    <div class="intro">
+      <p><b>FN 파일 단위로 순서대로</b> 만들며, 각 단계마다 연결되는 BN을 실행 순서대로 표시합니다. 각 항목을 <b>클릭</b>하면 <b>해당 부분의 전체 코드</b>가 펼쳐지고, <b>노란 강조 줄</b>이 주요 코드, <b>점선 밑줄</b>에 마우스를 올리면 해석 툴팁이 나옵니다.</p>
+      <div class="meta">
+        <span><b>FN</b> React · :3000</span>
+        <span><b>BN</b> Spring Boot · :8080</span>
+        <span><b>Redis</b> :6379</span>
+        <span><b>인증</b> JWT · HttpOnly Cookie</span>
+      </div>
+    </div>
+
+    <!-- ===================== STEP 1 ===================== -->
+    <section class="step" id="s1">
+      <div class="step-h"><span class="num">01</span><h3>프로젝트 셋업 &amp; 의존성</h3><span class="file-tag">package.json</span></div>
+      <div class="cols">
+        <div class="pane fn">
+          <div class="plabel fn">FN 작업 · 클릭하면 전체 코드</div>
+          <details class="acc fnacc"><summary><span class="fnum">1</span><span class="bf">package.json</span></summary>
+            <div class="accbody"><pre class="code"><span class="c">// package.json — dependencies 발췌</span>
+"dependencies": {
+  "react": "^18.x",
+  "react-dom": "^18.x",
+<span class="hl">  "<span class="tip" data-tip="새로고침 없이 URL만 바꿔 컴포넌트를 전환하는 SPA 라우팅 라이브러리">react-router-dom</span>": "^6.x",</span>
+<span class="hl">  "<span class="tip" data-tip="BN REST API 호출용 HTTP 클라이언트. 인터셉터·기본설정 관리가 쉬움">axios</span>": "^1.x"</span>
+}
+<span class="c">// 설치</span>  npm install react-router-dom axios
+<span class="hl"><span class="tip" data-tip="개발 서버를 :3000에 기동. BN :8080과 포트가 달라 CORS 필요">npm start</span>   <span class="c">// :3000</span></span></pre>
+              <p class="micro"><b>요약:</b> 두 패키지만 있으면 FN 시작 가능. 포트가 달라 CORS 필수.</p>
+            </div>
+          </details>
+        </div>
+        <div class="pane bn">
+          <div class="plabel bn">연결되는 BN · 실행 준비 <span class="cnt">3</span></div>
+          <details class="acc"><summary><span class="bnum">1</span><span class="bf">Redis 서버</span></summary>
+            <div class="accbody"><pre class="code"><span class="hl"><span class="tip" data-tip="RefreshToken(RT:유저명) 저장소. FN 로그인 전에 반드시 기동">redis-server</span></span>   <span class="c"># :6379</span></pre>
+              <p class="micro">RefreshToken 보관용 인메모리 저장소.</p></div>
+          </details>
+          <details class="acc"><summary><span class="bnum">2</span><span class="bf">application.properties</span></summary>
+            <div class="accbody"><pre class="code"><span class="hl">spring.redis.<span class="tip" data-tip="Spring Boot가 접속할 Redis 호스트">host</span>=localhost</span>
+<span class="hl">spring.redis.<span class="tip" data-tip="Redis 포트. 기본 6379">port</span>=6379</span></pre>
+              <p class="micro">BN이 Redis에 붙기 위한 접속 정보.</p></div>
+          </details>
+          <details class="acc"><summary><span class="bnum">3</span><span class="bf">DemoApplication.java</span></summary>
+            <div class="accbody"><pre class="code"><span class="hl"><span class="tip" data-tip="내장 톰캣을 :8080에 띄우는 Spring Boot 진입점">@SpringBootApplication</span></span>
+public class DemoApplication {
+  public static void main(String[] args) {
+    SpringApplication.run(DemoApplication.class, args);
+  }
+}</pre>
+              <p class="micro">FN 요청을 받을 서버(:8080) 기동.</p></div>
+          </details>
+        </div>
+      </div>
+      <div class="note"><b>선행 조건:</b> FN 작업 전 BN(:8080)과 Redis(:6379)가 떠 있어야 로그인·토큰 흐름이 동작.</div>
+    </section>
+
+    <!-- ===================== STEP 2 ===================== -->
+    <section class="step" id="s2">
+      <div class="step-h"><span class="num">02</span><h3>진입점 &amp; 라우팅</h3><span class="file-tag">index.js · App.js</span></div>
+      <div class="cols">
+        <div class="pane fn">
+          <div class="plabel fn">FN 작업 · 클릭하면 전체 코드</div>
+          <details class="acc fnacc"><summary><span class="fnum">1</span><span class="bf">index.js</span></summary>
+            <div class="accbody"><pre class="code">import ReactDOM from 'react-dom/client';
+import App from './App';
+<span class="hl">const root = ReactDOM.<span class="tip" data-tip="앱을 DOM #root에 마운트하는 최초 진입점">createRoot</span>(document.getElementById('root'));</span>
+root.render(&lt;App /&gt;);</pre>
+              <p class="micro">앱의 최초 진입점.</p></div>
+          </details>
+          <details class="acc fnacc"><summary><span class="fnum">2</span><span class="bf">App.js</span></summary>
+            <div class="accbody"><pre class="code">import { <span class="tip" data-tip="History API 기반 라우팅 컨테이너">BrowserRouter</span> as Router, Route, Routes, Link } from 'react-router-dom';
+import Main from "./components/Main"
+import User from "./components/User"
+import Join from "./components/Join"
+import Login from "./components/Login"
+import Logout from "./components/Logout"
+
+function App() {
+  return (
+    &lt;Router&gt;
+<span class="hl">      &lt;<span class="tip" data-tip="새로고침 없이 이동하는 내비게이션 링크">Link</span> to="/"&gt;MAIN&lt;/Link&gt; | </span>
+      &lt;Link to="/user"&gt;USER&lt;/Link&gt; |
+      &lt;Link to="/join"&gt;JOIN&lt;/Link&gt; |
+      &lt;Link to="/login"&gt;LOGIN&lt;/Link&gt; |
+      &lt;Link to="/logout"&gt;LOGOUT&lt;/Link&gt; |
+      &lt;Routes&gt;
+<span class="hl">        &lt;<span class="tip" data-tip="path별 렌더 컴포넌트 매핑. 각 path가 BN 엔드포인트와 1:1 대응">Route</span> path="/" element={&lt;Main /&gt;} /&gt;</span>
+        &lt;Route path="/user" element={&lt;User /&gt;} /&gt;
+        &lt;Route path="/join" element={&lt;Join /&gt;} /&gt;
+        &lt;Route path="/login" element={&lt;Login /&gt;} /&gt;
+        &lt;Route path="/logout" element={&lt;Logout /&gt;} /&gt;
+      &lt;/Routes&gt;
+    &lt;/Router&gt;
+  );
+}
+export default App;</pre>
+              <p class="micro">먼저 라우팅만 뚫어 화면 전환을 확인.</p></div>
+          </details>
+        </div>
+        <div class="pane bn">
+          <div class="plabel bn">연결되는 BN <span class="cnt">2</span></div>
+          <details class="acc"><summary><span class="bnum">1</span><span class="bf">SecurityConfig.java <code>corsConfigurationSource()</code></span></summary>
+            <div class="accbody"><pre class="code">@Bean
+CorsConfigurationSource corsConfigurationSource(){
+  CorsConfiguration config = new CorsConfiguration();
+  config.setAllowedHeaders(Collections.singletonList("*"));
+  config.setAllowedMethods(Collections.singletonList("*"));
+<span class="hl">  config.<span class="tip" data-tip="FN 출처(3000)를 허용 도메인으로 등록">setAllowedOriginPatterns</span>(List.of("http://localhost:3000"));</span>
+<span class="hl">  config.<span class="tip" data-tip="쿠키 송수신 허용. FN withCredentials와 한 쌍(필수)">setAllowCredentials</span>(true);</span>
+  return request -&gt; config;
+}</pre>
+              <p class="micro"><b>핵심:</b> 둘 중 하나만 빠져도 쿠키 차단.</p></div>
+          </details>
+          <details class="acc"><summary><span class="bnum">2</span><span class="bf">SecurityConfig.java <code>authorizeHttpRequests</code></span></summary>
+            <div class="accbody"><pre class="code">http.authorizeHttpRequests((auth)-&gt;{
+  auth.requestMatchers("/favicon.ico").permitAll();
+<span class="hl">  auth.requestMatchers("/","/join","/login","/validate").<span class="tip" data-tip="누구나 접근 가능한 공개 경로">permitAll()</span>;</span>
+<span class="hl">  auth.requestMatchers("/user").<span class="tip" data-tip="인증 + USER/ADMIN 권한 필요">hasAnyRole("USER","ADMIN")</span>;</span>
+  auth.requestMatchers("/manager").hasAnyRole("MANAGER");
+  auth.requestMatchers("/admin").hasAnyRole("ADMIN");
+  auth.anyRequest().authenticated();
+});</pre>
+              <p class="micro">FN 라우트 경로별 접근 권한 결정.</p></div>
+          </details>
+        </div>
+      </div>
+      <div class="note"><b>핵심:</b> FN :8080 요청은 BN CORS(3000 허용 + credentials)와 짝이어야 쿠키가 오간다.</div>
+    </section>
+
+    <!-- ===================== STEP 3 ===================== -->
+    <section class="step" id="s3">
+      <div class="step-h"><span class="num">03</span><h3>Main — 공개 홈</h3><span class="file-tag">components/Main.jsx</span></div>
+      <div class="cols">
+        <div class="pane fn">
+          <div class="plabel fn">FN 작업 · 클릭하면 전체 코드</div>
+          <details class="acc fnacc"><summary><span class="fnum">1</span><span class="bf">Main.jsx</span></summary>
+            <div class="accbody"><pre class="code"><span class="hl">const <span class="tip" data-tip="상태·API 없이 정적 JSX만 반환하는 점검용 컴포넌트">Main</span> = ()=&gt;{</span>
+  return (
+    &lt;div&gt;
+      &lt;h1&gt;MAIN PAGE&lt;/h1&gt;
+    &lt;/div&gt;
+  )
+}
+export default Main;</pre>
+              <p class="micro">라우팅·렌더 파이프라인 점검용.</p></div>
+          </details>
+        </div>
+        <div class="pane bn">
+          <div class="plabel bn">연결되는 BN <span class="cnt">1</span></div>
+          <details class="acc"><summary><span class="bnum">1</span><span class="bf">SecurityConfig.java <code>requestMatchers</code></span></summary>
+            <div class="accbody"><pre class="code">http.authorizeHttpRequests((auth)-&gt;{
+<span class="hl">  auth.requestMatchers("<span class="tip" data-tip="&quot;/&quot; 는 토큰 없이 접근 가능한 공개 경로">/</span>","/join","/login","/validate").permitAll();</span>
+  ...
+});</pre>
+              <p class="micro"><b>핵심:</b> <code>/</code> 는 <code>permitAll</code> 이라 토큰 없이 표시.</p></div>
+          </details>
+        </div>
+      </div>
+      <div class="note"><b>핵심:</b> 가장 단순한 페이지부터 만들어 라우팅·CORS 정상 여부를 먼저 확인.</div>
+    </section>
+
+    <!-- ===================== STEP 4 ===================== -->
+    <section class="step" id="s4">
+      <div class="step-h"><span class="num">04</span><h3>Join — 회원가입</h3><span class="file-tag">components/Join.jsx</span></div>
+      <div class="cols">
+        <div class="pane fn">
+          <div class="plabel fn">FN 작업 · 클릭하면 전체 코드</div>
+          <details class="acc fnacc"><summary><span class="fnum">1</span><span class="bf">Join.jsx</span></summary>
+            <div class="accbody"><pre class="code">import { useState } from "react"
+import axios from "axios"
+const Join = () =&gt; {
+<span class="hl">  const [username, setUsername] = <span class="tip" data-tip="입력값을 컴포넌트 상태로 보관. onChange마다 갱신">useState</span>("")</span>
+  const [password, setPassword] = useState("")
+
+  const handleJoin = () =&gt; {
+<span class="hl">    axios.<span class="tip" data-tip="회원가입 요청. 본문에 username/password JSON 전송">post</span>('http://localhost:8080/join',</span>
+      { username, password },
+<span class="hl">      { headers: { '<span class="tip" data-tip="JSON 본문 명시 → BN @RequestBody UserDTO가 파싱">Content-Type</span>': 'application/json' } })</span>
+      .then(resp =&gt; console.log(resp))
+      .catch(err =&gt; console.log(err));
+  }
+  return (
+    &lt;div&gt;
+      &lt;h1&gt;JOIN PAGE&lt;/h1&gt;
+<span class="hl">      USERNAME : &lt;input onChange={e =&gt; <span class="tip" data-tip="입력 이벤트에서 현재 값을 추출해 상태 업데이트">setUsername(e.target.value)</span>} /&gt;&lt;br /&gt;</span>
+      PASSWORD : &lt;input type="password" onChange={e =&gt; setPassword(e.target.value)} /&gt;&lt;br /&gt;
+      &lt;button onClick={handleJoin}&gt;JOIN&lt;/button&gt;
+    &lt;/div&gt;
+  )
+}
+export default Join;</pre>
+              <p class="micro"><span class="warn">개선점: 성공 후 이동 없음 → 실제라면 <code>navigate('/login')</code> 추가 권장.</span></p></div>
+          </details>
+        </div>
+        <div class="pane bn">
+          <div class="plabel bn">연결되는 BN <span class="cnt">5</span></div>
+          <details class="acc"><summary><span class="bnum">1</span><span class="bf">UserRestController.java <code>/join</code></span></summary>
+            <div class="accbody"><pre class="code">@PostMapping(value="/join", produces=MediaType.APPLICATION_JSON_VALUE)
+public ResponseEntity&lt;String&gt; join_post(<span class="tip" data-tip="요청 JSON 본문을 UserDTO 객체로 바인딩">@RequestBody UserDTO userDto</span>){
+  User user = User.builder()
+      .username(userDto.getUsername())
+<span class="hl">      .password( <span class="tip" data-tip="BCrypt 단방향 해시로 비밀번호 암호화">passwordEncoder.encode</span>(userDto.getPassword()) )</span>
+      .role("ROLE_USER")
+      .build();
+<span class="hl">  userRepository.<span class="tip" data-tip="JpaRepository.save — INSERT/UPDATE">save</span>(user);</span>
+  return new ResponseEntity&lt;&gt;("success", HttpStatus.OK);
+}</pre>
+              <p class="micro">회원가입 진입점.</p></div>
+          </details>
+          <details class="acc"><summary><span class="bnum">2</span><span class="bf">UserDTO.java</span></summary>
+            <div class="accbody"><pre class="code">@Data @AllArgsConstructor @NoArgsConstructor @Builder
+public class UserDTO {
+<span class="hl">  private String <span class="tip" data-tip="FN↔BN 데이터 전송용 필드(Entity와 분리)">username</span>;</span>
+  private String password;
+  private String role;
+}</pre>
+              <p class="micro">계층 간 데이터 전송 객체.</p></div>
+          </details>
+          <details class="acc"><summary><span class="bnum">3</span><span class="bf">SecurityConfig.java <code>passwordEncoder()</code></span></summary>
+            <div class="accbody"><pre class="code">@Bean
+public PasswordEncoder passwordEncoder(){
+<span class="hl">  return new <span class="tip" data-tip="단방향 해시 암호화. 평문 비밀번호를 저장하지 않음">BCryptPasswordEncoder</span>();</span>
+}</pre>
+              <p class="micro">비밀번호 암호화 인코더.</p></div>
+          </details>
+          <details class="acc"><summary><span class="bnum">4</span><span class="bf">User.java (Entity)</span></summary>
+            <div class="accbody"><pre class="code">@Entity @Data @Builder @NoArgsConstructor @AllArgsConstructor
+public class User {
+<span class="hl">  @Id
+  private String <span class="tip" data-tip="username을 PK로 사용하는 JPA 엔티티">username</span>;</span>
+  private String password;
+  private String role;
+}</pre>
+              <p class="micro">DB 테이블 매핑 엔티티.</p></div>
+          </details>
+          <details class="acc"><summary><span class="bnum">5</span><span class="bf">UserRepository.java</span></summary>
+            <div class="accbody"><pre class="code">public interface UserRepository
+<span class="hl">    extends <span class="tip" data-tip="findById/save 등 기본 CRUD 자동 제공">JpaRepository&lt;User, String&gt;</span> {</span>
+}</pre>
+              <p class="micro">JPA 기본 CRUD 저장소.</p></div>
+          </details>
+        </div>
+      </div>
+      <div class="note"><b>흐름:</b> FN JSON → DTO → 암호화 → Entity → Repository 저장. role 은 <code>"ROLE_USER"</code> 고정.</div>
+    </section>
+
+    <!-- ===================== STEP 5 ===================== -->
+    <section class="step" id="s5">
+      <div class="step-h"><span class="num">05</span><h3>Login — 로그인 &amp; 토큰 발급</h3><span class="file-tag">components/Login.jsx</span></div>
+      <div class="cols">
+        <div class="pane fn">
+          <div class="plabel fn">FN 작업 · 클릭하면 전체 코드</div>
+          <details class="acc fnacc"><summary><span class="fnum">1</span><span class="bf">Login.jsx</span></summary>
+            <div class="accbody"><pre class="code">import { useState, useEffect } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+
+const Login = () =&gt; {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const navigate = useNavigate();
+
+<span class="hl">  <span class="tip" data-tip="마운트 시 /validate 호출. 이미 로그인이면 navigate('/') 로 재진입 방지">useEffect</span>(()=&gt;{</span>
+    const validateToken = async ()=&gt;{
+      try{
+        await axios.get("http://localhost:8080/validate", {withCredentials:true});
+        navigate("/")
+      }catch(error){ console.log("토큰검증실패..",error); }
+    }
+    validateToken();
+  },[navigate])
+
+  const handleLogin = async () =&gt; {
+    try {
+<span class="hl">      await axios.post("http://localhost:8080/login",
+        { username, password },
+        { headers:{"Content-Type":"application/json"}, <span class="tip" data-tip="응답의 Set-Cookie(access-token)를 브라우저가 저장하도록 허용. 없으면 쿠키 무시">withCredentials:true</span> });</span>
+      navigate("/");
+    } catch (error) {
+      alert("로그인 실패! 다시 시도해주세요.");
+    }
+  }
+  return (
+    &lt;div&gt;
+      &lt;h1&gt;LOGIN PAGE&lt;/h1&gt;
+      USERNAME : &lt;input onChange={(e)=&gt;setUsername(e.target.value)} /&gt;&lt;br /&gt;
+      PASSWORD : &lt;input type="password" onChange={(e)=&gt;setPassword(e.target.value)} /&gt;&lt;br /&gt;
+      &lt;button onClick={handleLogin}&gt;LOGIN&lt;/button&gt;
+    &lt;/div&gt;
+  );
+};
+export default Login;</pre>
+              <p class="micro"><b>핵심:</b> FN 은 토큰을 직접 다루지 않고 쿠키만 주고받는다.</p></div>
+          </details>
+        </div>
+        <div class="pane bn">
+          <div class="plabel bn">연결되는 BN <span class="cnt">7</span></div>
+          <details class="acc"><summary><span class="bnum">1</span><span class="bf">UserRestController.java <code>/login</code></span></summary>
+            <div class="accbody"><pre class="code">@PostMapping("/login")
+public ResponseEntity&lt;Map&lt;String,Object&gt;&gt; login(@RequestBody UserDTO userDto, HttpServletResponse resp){
+  try{
+<span class="hl">    Authentication authentication = <span class="tip" data-tip="ID/PW 일치 여부를 검증하는 인증 시도">authenticationManager.authenticate</span>(
+        new UsernamePasswordAuthenticationToken(userDto.getUsername(), userDto.getPassword()));</span>
+<span class="hl">    TokenInfo tokenInfo = <span class="tip" data-tip="Access/Refresh JWT 토큰 생성">jwtTokenProvider.generateToken</span>(authentication);</span>
+<span class="hl">    <span class="tip" data-tip="RefreshToken을 RT:유저명 키로 Redis에 저장">redisUtil.save</span>("RT:"+authentication.getName(), tokenInfo.getRefreshToken());</span>
+
+<span class="hl">    Cookie accessCookie = new Cookie("access-token", tokenInfo.getAccessToken());
+    accessCookie.<span class="tip" data-tip="JS에서 쿠키 접근 차단(XSS 탈취 방지). 보안 핵심">setHttpOnly</span>(true);</span>
+    accessCookie.setPath("/");
+    accessCookie.setMaxAge(JWTProperties.ACCESS_TOKEN_EXPIRATION_TIME);
+    Cookie userCookie = new Cookie("username", authentication.getName());
+    userCookie.setHttpOnly(true); userCookie.setPath("/");
+    resp.addCookie(accessCookie); resp.addCookie(userCookie);
+  }catch(AuthenticationException e){
+    return new ResponseEntity(response, HttpStatus.UNAUTHORIZED);
+  }
+  return new ResponseEntity(response, HttpStatus.OK);
+}</pre>
+              <p class="micro">로그인 진입점 — 인증 → 토큰 → 쿠키.</p></div>
+          </details>
+          <details class="acc"><summary><span class="bnum">2</span><span class="bf">SecurityConfig.java <code>authenticationManager()</code></span></summary>
+            <div class="accbody"><pre class="code">@Bean
+public AuthenticationManager authenticationManager(
+    AuthenticationConfiguration configuration) throws Exception {
+<span class="hl">  return configuration.<span class="tip" data-tip="Spring Security 인증 처리를 총괄하는 매니저 빈">getAuthenticationManager</span>();</span>
+}</pre>
+              <p class="micro">직접 로그인 처리를 위한 인증 매니저.</p></div>
+          </details>
+          <details class="acc"><summary><span class="bnum">3</span><span class="bf">PrincipalDetailsService.java</span></summary>
+            <div class="accbody"><pre class="code">@Override
+public UserDetails <span class="tip" data-tip="인증 시 username으로 DB 조회해 UserDetails 반환">loadUserByUsername</span>(String username){
+  Optional&lt;User&gt; userOptional = userRepository.findById(username);
+  if(userOptional.isPresent()){
+    User user = userOptional.get();
+<span class="hl">    UserDTO userDTO = UserDTO.builder()
+        .username(user.getUsername()).password(user.getPassword()).role(user.getRole()).build();</span>
+    return PrincipalDetails.builder().userDTO(userDTO).build();
+  }
+  throw new UsernameNotFoundException(username+"이 존재하지않습니다");
+}</pre>
+              <p class="micro">인증 시 DB에서 유저 로드.</p></div>
+          </details>
+          <details class="acc"><summary><span class="bnum">4</span><span class="bf">JWTTokenProvider.java <code>generateToken()</code></span></summary>
+            <div class="accbody"><pre class="code">public TokenInfo generateToken(Authentication authentication){
+  String authorities = authentication.getAuthorities().stream()
+      .map(GrantedAuthority::getAuthority).collect(Collectors.joining(","));
+  long now = new Date().getTime();
+<span class="hl">  String accessToken = Jwts.builder()
+      .setSubject(authentication.getName())
+      .setExpiration(new Date(now + JWTProperties.ACCESS_TOKEN_EXPIRATION_TIME))
+      .<span class="tip" data-tip="비밀키로 HS256 서명 → 위변조 불가한 JWT 생성">signWith</span>(key, SignatureAlgorithm.HS256)
+      .claim("username", authentication.getName())
+      .claim("auth", authorities).compact();</span>
+  String refreshToken = Jwts.builder()
+      .setSubject("Refresh_Token_Title")
+      .setExpiration(new Date(now + JWTProperties.REFRESH_TOKEN_EXPIRATION_TIME))
+      .signWith(key, SignatureAlgorithm.HS256).compact();
+  return TokenInfo.builder().grantType("Bearer")
+      .accessToken(accessToken).refreshToken(refreshToken).build();
+}</pre>
+              <p class="micro">Access/Refresh 토큰 생성.</p></div>
+          </details>
+          <details class="acc"><summary><span class="bnum">5</span><span class="bf">JWTProperties.java</span></summary>
+            <div class="accbody"><pre class="code">public class JWTProperties {
+<span class="hl">  public static final int <span class="tip" data-tip="AccessToken 만료시간(밀리초). 예제는 1분">ACCESS_TOKEN_EXPIRATION_TIME</span> = 1000*60*1;</span>
+  public static final int REFRESH_TOKEN_EXPIRATION_TIME = 1000*60*2;
+<span class="hl">  public static final String <span class="tip" data-tip="access-token 쿠키 이름 상수">ACCESS_TOKEN_COOKIE_NAME</span> = "access-token";</span>
+}</pre>
+              <p class="micro">쿠키명·만료시간 상수.</p></div>
+          </details>
+          <details class="acc"><summary><span class="bnum">6</span><span class="bf">RedisUtil.java <code>save()</code></span></summary>
+            <div class="accbody"><pre class="code">public void save(String key, String value) {
+<span class="hl">  redisTemplate.opsForValue().<span class="tip" data-tip="key(RT:유저명)에 RefreshToken 값 저장">set</span>(key, value);</span>
+}</pre>
+              <p class="micro">RefreshToken을 Redis에 보관.</p></div>
+          </details>
+          <details class="acc"><summary><span class="bnum">7</span><span class="bf">UserRestController.java (쿠키 응답)</span></summary>
+            <div class="accbody"><pre class="code"><span class="hl">Cookie accessCookie = new Cookie("access-token", tokenInfo.getAccessToken());
+accessCookie.<span class="tip" data-tip="브라우저에만 저장되고 JS는 못 읽는 보안 쿠키">setHttpOnly</span>(true);</span>
+accessCookie.setMaxAge(JWTProperties.ACCESS_TOKEN_EXPIRATION_TIME);
+resp.addCookie(accessCookie);</pre>
+              <p class="micro">AccessToken을 HttpOnly 쿠키로 발급.</p></div>
+          </details>
+        </div>
+      </div>
+      <div class="note"><b>핵심:</b> AccessToken 은 HttpOnly 쿠키(XSS 방지), RefreshToken 은 Redis.</div>
+    </section>
+
+    <!-- ===================== STEP 6 ===================== -->
+    <section class="step" id="s6">
+      <div class="step-h"><span class="num">06</span><h3>공용 axios &amp; /validate 가드</h3><span class="file-tag">api/axiosConfig.js</span></div>
+      <div class="cols">
+        <div class="pane fn">
+          <div class="plabel fn">FN 작업 · 클릭하면 전체 코드</div>
+          <details class="acc fnacc"><summary><span class="fnum">1</span><span class="bf">axiosConfig.js</span></summary>
+            <div class="accbody"><pre class="code">import axios from 'axios';
+
+<span class="hl">const api = axios.<span class="tip" data-tip="baseURL:8080 + withCredentials 공용 인스턴스. 매 요청에 쿠키 자동 동봉">create</span>({
+  baseURL: 'http://localhost:8080',
+  withCredentials: true,
+});</span>
+
+<span class="hl">api.interceptors.request.<span class="tip" data-tip="보호 API 호출 직전 /validate 를 먼저 쳐서 로그인 여부 확인">use</span>(
+  async (config) =&gt; {</span>
+    const publicPaths = ['/login', '/join'];
+    if (publicPaths.some((p) =&gt; config.url.includes(p))) return config;
+    try {
+      await axios.get('http://localhost:8080/validate', { withCredentials: true });
+      return config;
+    } catch (error) {
+<span class="hl">      <span class="tip" data-tip="미인증 시 로그인 페이지로 강제 이동">window.location.href = '/login'</span>;</span>
+      return Promise.reject('인증이 필요합니다.');
+    }
+  }
+);
+
+api.interceptors.response.use(
+  (response) =&gt; response,
+<span class="hl">  (error) =&gt; { if (error.response?.status === <span class="tip" data-tip="토큰 만료/미인증 응답 → 로그인 페이지로">401</span>) window.location.href = '/login';</span>
+    return Promise.reject(error); }
+);
+export default api;</pre>
+              <p class="micro"><span class="warn">이 <code>api</code>를 컴포넌트에서 import 해야 가드가 적용된다.</span></p></div>
+          </details>
+        </div>
+        <div class="pane bn">
+          <div class="plabel bn">연결되는 BN <span class="cnt">3</span></div>
+          <details class="acc"><summary><span class="bnum">1</span><span class="bf">SecurityConfig.java (CORS)</span></summary>
+            <div class="accbody"><pre class="code"><span class="hl">config.<span class="tip" data-tip="쿠키 송수신 허가. FN withCredentials와 한 쌍">setAllowCredentials</span>(true);</span></pre>
+              <p class="micro">쿠키 기반 요청 허용.</p></div>
+          </details>
+          <details class="acc"><summary><span class="bnum">2</span><span class="bf">JWTAuthorizationFilter.java</span></summary>
+            <div class="accbody"><pre class="code">protected void doFilterInternal(HttpServletRequest request, ...){
+  String token = /* access-token 쿠키 추출 */;
+  if(token != null){
+    try {
+<span class="hl">      if (jwtTokenProvider.<span class="tip" data-tip="서명·만료 검증. 만료면 ExpiredJwtException">validateToken</span>(token)) {
+        Authentication auth = jwtTokenProvider.getAuthentication(token);
+        <span class="tip" data-tip="검증된 인증 정보를 컨텍스트에 저장 → 이후 컨트롤러에서 인증됨">SecurityContextHolder.getContext().setAuthentication</span>(auth);</span>
+      }
+    } catch(ExpiredJwtException e){ /* Redis RT로 재발급 */ }
+  }
+  filterChain.doFilter(request, response);
+}</pre>
+              <p class="micro">모든 요청 전 쿠키 토큰으로 인증 세팅.</p></div>
+          </details>
+          <details class="acc"><summary><span class="bnum">3</span><span class="bf">UserRestController.java <code>/validate</code></span></summary>
+            <div class="accbody"><pre class="code">@GetMapping("/validate")
+public ResponseEntity&lt;String&gt; validateToken() {
+  Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+  boolean hasRoleAnon = authentication.getAuthorities().stream()
+      .anyMatch(a -&gt; "ROLE_ANONYMOUS".equals(a.getAuthority()));
+<span class="hl">  if (authentication.isAuthenticated() &amp;&amp; !hasRoleAnon)
+    return new ResponseEntity&lt;&gt;("", <span class="tip" data-tip="인증된 상태 → FN 요청 통과">HttpStatus.OK</span>);</span>
+<span class="hl">  return new ResponseEntity&lt;&gt;("", <span class="tip" data-tip="미인증 → FN이 /login 으로 리다이렉트">HttpStatus.UNAUTHORIZED</span>);</span>
+}</pre>
+              <p class="micro">로그인 상태를 200/401 로 알려주는 관문.</p></div>
+          </details>
+        </div>
+      </div>
+      <div class="note"><b>왜 이 순서:</b> 로그인(05) 후 보호 요청용 공용 axios 계층을 만든다. 보호 페이지(07)의 공통 관문.</div>
+    </section>
+
+    <!-- ===================== STEP 7 ===================== -->
+    <section class="step" id="s7">
+      <div class="step-h"><span class="num">07</span><h3>User — 보호 페이지</h3><span class="file-tag">components/User.jsx</span></div>
+      <div class="cols">
+        <div class="pane fn">
+          <div class="plabel fn">FN 작업 · 클릭하면 전체 코드</div>
+          <details class="acc fnacc"><summary><span class="fnum">1</span><span class="bf">User.jsx</span></summary>
+            <div class="accbody"><pre class="code">import { useState, useEffect } from "react";
+import axios from "axios"
+
+const User = () =&gt; {
+<span class="hl">  const [userInfo, setUserInfo] = <span class="tip" data-tip="조회한 사용자 정보/에러 메시지 상태">useState</span>(null);</span>
+  const [error, setError] = useState(null);
+<span class="hl">  <span class="tip" data-tip="마운트 시 1회 /user 조회">useEffect</span>(() =&gt; {</span>
+    const fetchUserInfo = async () =&gt; {
+      try {
+<span class="hl">        const resp = await axios.get("http://localhost:8080/user", {<span class="tip" data-tip="쿠키의 JWT를 실어 보호 API 호출">withCredentials:true</span>});</span>
+        setUserInfo(resp.data);
+        setError(null);
+      } catch (err) {
+        setError("사용자 정보를 가져오는 데 실패했습니다.");
+      }
+    };
+    fetchUserInfo();
+  }, []);
+  return (
+    &lt;div&gt;
+      &lt;h1&gt;USER PAGE&lt;/h1&gt;
+<span class="hl">      {error &amp;&amp; &lt;p style={{ color: "red" }}&gt;{error}&lt;/p&gt;}</span>
+      {userInfo &amp;&amp; (
+        &lt;div&gt;
+          &lt;p&gt;Username : {userInfo.username}&lt;/p&gt;
+          &lt;p&gt;Role : {userInfo.role}&lt;/p&gt;
+        &lt;/div&gt;
+      )}
+    &lt;/div&gt;
+  );
+};
+export default User;</pre>
+              <p class="micro"><b>렌더:</b> error 면 빨간 메시지, userInfo 면 Username/Role 표시.</p></div>
+          </details>
+        </div>
+        <div class="pane bn">
+          <div class="plabel bn">연결되는 BN <span class="cnt">4</span></div>
+          <details class="acc"><summary><span class="bnum">1</span><span class="bf">JWTAuthorizationFilter.java (먼저 실행)</span></summary>
+            <div class="accbody"><pre class="code">Cookie[] cookies = request.getCookies();
+<span class="hl">token = Arrays.stream(cookies)
+    .filter(c -&gt; c.getName().equals("<span class="tip" data-tip="요청 쿠키에서 access-token 값을 추출">access-token</span>"))
+    .findFirst().map(Cookie::getValue).orElse(null);</span>
+if(token != null &amp;&amp; jwtTokenProvider.validateToken(token))
+<span class="hl">  SecurityContextHolder.getContext().<span class="tip" data-tip="컨트롤러 진입 전에 인증 정보를 세팅">setAuthentication</span>(...);</span></pre>
+              <p class="micro">컨트롤러 진입 전 인증 처리.</p></div>
+          </details>
+          <details class="acc"><summary><span class="bnum">2</span><span class="bf">JWTTokenProvider.java</span></summary>
+            <div class="accbody"><pre class="code"><span class="hl">public Authentication <span class="tip" data-tip="토큰 클레임(username/auth)을 읽어 인증 객체로 변환">getAuthentication</span>(String accessToken){</span>
+  Claims claims = Jwts.parser().setSigningKey(key).build()
+      .parseClaimsJws(accessToken).getBody();
+  String username = (String)claims.get("username");
+  String auth = (String)claims.get("auth");
+  ... return new UsernamePasswordAuthenticationToken(principalDetails, null, authorities);
+}
+<span class="hl">public boolean <span class="tip" data-tip="서명·만료 검증. 만료 시 ExpiredJwtException 발생">validateToken</span>(String token){ ... }</span></pre>
+              <p class="micro">토큰 검증 및 인증 객체 생성.</p></div>
+          </details>
+          <details class="acc"><summary><span class="bnum">3</span><span class="bf">SecurityConfig.java <code>/user 권한</code></span></summary>
+            <div class="accbody"><pre class="code"><span class="hl">auth.requestMatchers("/user").<span class="tip" data-tip="USER 또는 ADMIN 권한만 접근 허용">hasAnyRole("USER","ADMIN")</span>;</span></pre>
+              <p class="micro">권한 기반 접근 제어.</p></div>
+          </details>
+          <details class="acc"><summary><span class="bnum">4</span><span class="bf">UserRestController.java <code>/user</code></span></summary>
+            <div class="accbody"><pre class="code">@GetMapping("/user")
+public ResponseEntity&lt;Map&lt;String,Object&gt;&gt; user(Authentication authentication) {
+<span class="hl">  Optional&lt;User&gt; userOptional = userRepository.<span class="tip" data-tip="인증된 사용자명으로 DB 조회">findById</span>(authentication.getName());</span>
+  if(userOptional.isPresent()){
+    User user = userOptional.get();
+<span class="hl">    response.put("username", user.getUsername());
+    response.put("role", user.getRole());</span>
+    return new ResponseEntity&lt;&gt;(response, HttpStatus.OK);
+  }
+  return new ResponseEntity&lt;&gt;(null, HttpStatus.UNAUTHORIZED);
+}</pre>
+              <p class="micro">인증 통과 후 <code>{username, role}</code> 반환.</p></div>
+          </details>
+        </div>
+      </div>
+      <div class="note"><b>핵심:</b> 필터가 <b>컨트롤러보다 먼저</b> 인증을 세팅. 토큰 없거나 만료면 401 → FN 은 <code>/login</code> 으로.</div>
+    </section>
+
+    <!-- ===================== STEP 8 ===================== -->
+    <section class="step" id="s8">
+      <div class="step-h"><span class="num">08</span><h3>Logout — 로그아웃</h3><span class="file-tag">components/Logout.jsx</span></div>
+      <div class="cols">
+        <div class="pane fn">
+          <div class="plabel fn">FN 작업 · 클릭하면 전체 코드</div>
+          <details class="acc fnacc"><summary><span class="fnum">1</span><span class="bf">Logout.jsx</span></summary>
+            <div class="accbody"><pre class="code">import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios"
+
+const Logout = () =&gt; {
+  const navigate = useNavigate();
+<span class="hl">  <span class="tip" data-tip="페이지 진입 즉시 로그아웃 실행(버튼 없음)">useEffect</span>(() =&gt; {</span>
+    const performLogout = async () =&gt; {
+      try {
+<span class="hl">        await axios.<span class="tip" data-tip="쿠키 실어 로그아웃 요청 → BN이 Redis RT 삭제 + 쿠키 제거">post</span>("http://localhost:8080/logout", {}, { withCredentials: true });</span>
+      } catch (error) {
+        console.error("로그아웃 실패:", error);
+<span class="hl">      } finally {
+        <span class="tip" data-tip="성공·실패 무관하게 로그인 페이지로 이동">navigate("/login")</span>;
+      }</span>
+    };
+    performLogout();
+  }, [navigate]);
+  return (
+    &lt;div&gt;
+      &lt;h1&gt;LOGOUT PAGE&lt;/h1&gt;
+      &lt;p&gt;로그아웃 처리중...&lt;/p&gt;
+    &lt;/div&gt;
+  );
+};
+export default Logout;</pre>
+              <p class="micro"><b>화면:</b> "로그아웃 처리중..." 텍스트만 표시.</p></div>
+          </details>
+        </div>
+        <div class="pane bn">
+          <div class="plabel bn">연결되는 BN <span class="cnt">4</span></div>
+          <details class="acc"><summary><span class="bnum">1</span><span class="bf">SecurityConfig.java <code>http.logout()</code></span></summary>
+            <div class="accbody"><pre class="code">http.logout((logout)-&gt;{
+  logout.permitAll();
+<span class="hl">  logout.<span class="tip" data-tip="로그아웃 시 실행할 핸들러 등록">addLogoutHandler</span>(customLogoutHandler);</span>
+<span class="hl">  logout.<span class="tip" data-tip="로그아웃 성공 후 실행할 핸들러 등록">logoutSuccessHandler</span>(customLogoutSuccessHandler);</span>
+});</pre>
+              <p class="micro">로그아웃 처리 핸들러 등록.</p></div>
+          </details>
+          <details class="acc"><summary><span class="bnum">2</span><span class="bf">CustomLogoutHandler.java</span></summary>
+            <div class="accbody"><pre class="code">@Override
+<span class="hl">public void <span class="tip" data-tip="로그아웃 사전 처리(세션/토큰 정리 지점)">logout</span>(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {</span>
+  log.info("CustomLogoutHandler's logout invoke...");
+  // Token 방식 처리 지점
+}</pre>
+              <p class="micro">로그아웃 직접 처리.</p></div>
+          </details>
+          <details class="acc"><summary><span class="bnum">3</span><span class="bf">CustomLogoutSuccessHandler.java</span></summary>
+            <div class="accbody"><pre class="code">public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication){
+  if(token != null){
+<span class="hl">    redisUtil.<span class="tip" data-tip="Redis에서 RefreshToken(RT:유저명) 삭제">delete</span>("RT:"+authentication.getName());</span>
+    Cookie cookie = new Cookie("access-token", null);
+<span class="hl">    cookie.<span class="tip" data-tip="access-token 쿠키를 만료시켜 제거">setMaxAge</span>(0); cookie.setPath("/"); response.addCookie(cookie);</span>
+    Cookie cookie2 = new Cookie("username", null);
+    cookie2.setMaxAge(0); cookie2.setPath("/"); response.addCookie(cookie2);
+  }
+  response.sendRedirect("/login?logout=...");
+}</pre>
+              <p class="micro">RT 삭제 + 쿠키 제거 후 리다이렉트.</p></div>
+          </details>
+          <details class="acc"><summary><span class="bnum">4</span><span class="bf">RedisUtil.java <code>delete()</code></span></summary>
+            <div class="accbody"><pre class="code">public void delete(String key) {
+<span class="hl">  redisTemplate.<span class="tip" data-tip="키(RT:유저명)에 해당하는 값 삭제">delete</span>(key);</span>
+}</pre>
+              <p class="micro">Redis 키 삭제 유틸.</p></div>
+          </details>
+        </div>
+      </div>
+      <div class="note"><b>흐름:</b> <code>/logout</code> POST → 핸들러가 Redis RT 삭제 + <code>access-token·username</code> 쿠키 제거 → FN 은 <code>/login</code> 이동.</div>
+    </section>
+
+  </main>
+</div>
+
+<div class="copyright">© 2026 <b>jungwoogyun</b></div>
+
+<script>
+  const links = document.querySelectorAll('.qmenu a');
+  const map = {};
+  links.forEach(a => map[a.getAttribute('href').slice(1)] = a);
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(a => a.classList.remove('active'));
+        if (map[e.target.id]) map[e.target.id].classList.add('active');
+      }
+    });
+  }, { rootMargin: '0px 0px -70% 0px', threshold: 0 });
+  document.querySelectorAll('.step').forEach(s => obs.observe(s));
+</script>
+</body>
+</html>
